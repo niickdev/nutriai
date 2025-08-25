@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nutri AI</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div id="lock-screen">
+        <div id="pin-display">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <div id="keypad">
+            <button data-key="1">1</button>
+            <button data-key="2">2</button>
+            <button data-key="3">3</button>
+            <button data-key="4">4</button>
+            <button data-key="5">5</button>
+            <button data-key="6">6</button>
+            <button data-key="7">7</button>
+            <button data-key="8">8</button>
+            <button data-key="9">9</button>
+            <div class="keypad-placeholder"></div>
+            <button data-key="0">0</button>
+            <button data-key="backspace" class="keypad-backspace">&#9003;</button>
+        </div>
+    </div>
+
+    <div id="app-container" class="app-container">
+        <header class="app-header">
+            <h1>Nutri AI</h1>
+        </header>
+        <main class="app-main">
+            <div id="initial-view" class="view active">
+                <div class="button-group">
+                    <button id="use-camera-btn" class="btn btn-primary">Use Camera</button>
+                    <label for="upload-photo-input" class="btn btn-secondary">Upload Photo</label>
+                    <input type="file" id="upload-photo-input" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <div id="camera-view" class="view">
+                <video id="camera-stream" autoplay playsinline></video>
+                <canvas id="canvas"></canvas>
+                <div class="button-group">
+                    <button id="take-photo-btn" class="btn btn-primary">Take Photo</button>
+                    <button class="btn btn-secondary back-btn">Cancel</button>
+                </div>
+            </div>
+
+            <div id="preview-view" class="view">
+                <img id="image-preview" src="" alt="Captured photo preview">
+                <div class="button-group"></div>
+            </div>
+
+            <div id="loading-view" class="view">
+                 <div class="skeleton-loader">
+                    <div class="skeleton title"></div>
+                    <div class="skeleton pill"></div>
+                    <div class="skeleton grid">
+                        <div class="skeleton card"></div>
+                        <div class="skeleton card"></div>
+                        <div class="skeleton card"></div>
+                        <div class="skeleton card"></div>
+                    </div>
+                    <div class="skeleton details"></div>
+                </div>
+            </div>
+
+            <div id="results-view" class="view">
+                <div id="results-content"></div>
+                <div class="button-group" style="margin-top: 24px;">
+                     <button class="btn btn-primary back-btn">Scan Another Item</button>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
