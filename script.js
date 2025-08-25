@@ -20,8 +20,8 @@
          sed -i "s|__API_KEY__|${{ secrets.NUTRI_AI_API_KEY }}|g" script.js
          sed -i "s|__PIN__|${{ secrets.NUTRI_AI_PIN }}|g" script.js
 */
-const API_KEY = "__NUTRI_AI_API_KEY__";
-const CORRECT_PIN = "__NUTRI_AI_PIN__";
+const API_KEY = "__API_KEY__";
+const CORRECT_PIN = "__PIN__";
 
 const API_URL = 'https://models.inference.ai.azure.com/chat/completions';
 const AI_PROMPT = `Analyze the meal in the image. Respond ONLY with a valid JSON object. Do not include markdown or text outside the JSON. The structure must be: {"items": [{"item": "string", "calories": number}], "nutrition_summary": {"total_calories": number, "macronutrients": {"protein_g": number, "carbs_g": number, "fat_g": number, "fiber_g": number}, "micronutrients": {"sugar_g": number, "sodium_mg": number}}, "general_summary": "string", "confidence_score": "string (High, Medium, or Low)", "health_tips": "string"}`;

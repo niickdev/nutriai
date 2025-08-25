@@ -1,0 +1,45 @@
+# .github/workflows/deploy.yml
+
+name: Deploy NutriAI to GitHub Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"] # Or "master", whatever your default branch is
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # Build and deploy job
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Replace secrets in script.js
+        run: |
+          # Use sed to find and replace the placeholders with the actual secrets
+          # The secrets are securely passed to the runner by GitHub
+          sed -i "s|__API_KEY__|${{ secrets.NUTRI_AI_API_KEY }}|g" script.js
+          sed -i "s|__PIN__|${{ secrets.NUTRI_AI_PIN }}|g" script.js
+        
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload the entire repository (including the modified script.js)
+          path: '.'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
