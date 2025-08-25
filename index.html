@@ -1,559 +1,365 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nutri AI</title>
-    <style>
-        :root {
-            --primary-color: #2a9d8f;
-            --primary-light: #f0fafa;
-            --text-primary: #264653;
-            --text-secondary: #6c757d;
-            --background-color: #fdfdfd;
-            --card-background: #ffffff;
-            --border-color: #e9ecef;
-            --error-color: #e76f51;
-            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+<title>Nutri AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Color Palette */
+    --c-bg: #ffffff;         /* UNIFIED BACKGROUND COLOR */
+    --c-surface: #ffffff;    /* Also white, used for consistency */
+    --c-primary: #10b981;      /* Emerald 500 */
+    --c-primary-active: #059669; /* Emerald 600 */
+    --c-text-header: #111827;  /* Gray 900 */
+    --c-text-body: #374151;    /* Gray 700 */
+    --c-text-muted: #6b7280;   /* Gray 500 */
+    --c-border: #f3f4f6;      /* Gray 100 */
 
-        /* --- Base & Layout --- */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+    /* Nutrient & Confidence Colors */
+    --c-protein-bg: #fee2e2;
+    --c-carbs-bg: #dbeafe;
+    --c-fat-bg: #fef3c7;
+    --c-fiber-bg: #ede9fe;
+    --c-sugar-bg: #fce7f3;
+    --c-sat-fat-bg: #f5f5f4;
+    --c-conf-high-bg: #dcfce7; --c-conf-high: #166534;
+    --c-conf-medium-bg: #fef3c7; --c-conf-medium: #92400e;
+    --c-conf-low-bg: #fee2e2; --c-conf-low: #991b1b;
+    
+    /* Sizing & Effects */
+    --radius: 1.25rem; /* 20px */
+    --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  }
 
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
+  /* --- 1. Global Styles --- */
+  *, *::before, *::after { box-sizing: border-box; }
+  
+  html { font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  
+  body { margin: 0; background-color: var(--c-bg); color: var(--c-text-body); font-size: 16px; line-height: 1.6; }
 
-        body {
-            font-family: var(--font-family);
-            background-color: var(--background-color);
-            color: var(--text-primary);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding-top: 20px;
-        }
+  /* --- 2. App Shell & Screen Management --- */
+  .app-shell { max-width: 480px; margin: 0 auto; } /* No bg color needed, inherits from body */
+  .app-screen { min-height: 100vh; display: none; flex-direction: column; animation: fadeIn 0.4s ease-out; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .app-screen.active { display: flex; }
+  
+  /* --- 3. Header --- */
+  .app-header { display: flex; align-items: center; justify-content: space-between; padding: 1.5rem 2rem 0 2rem; height: 84px; }
+  .header-title { font-weight: 600; font-size: 1rem; color: var(--c-text-header); }
+  .back-btn { background: none; border: none; cursor: pointer; padding: 0.5rem; font-size: 1.5rem; color: var(--c-text-header); }
+  .placeholder { width: 40px; }
+  
+  /* --- 4. Components --- */
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 1rem;
+    font-weight: 600; font-size: 1rem; cursor: pointer; border: none; border-radius: var(--radius);
+    transition: all 150ms ease-out;
+  }
+  .btn-primary { background-color: var(--c-primary); color: white; }
+  .btn-primary:hover:not(:disabled) { background-color: var(--c-primary-active); }
+  
+  .card { background-color: var(--c-surface); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--c-border); padding: 1.5rem; width: 100%; }
 
-        .app-container {
-            width: 100%;
-            max-width: 450px;
-            height: calc(100% - 40px);
-            display: flex;
-            flex-direction: column;
-            background-color: var(--card-background);
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            opacity: 0;
-            transform: scale(0.95);
-            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-        }
+  .sticky-footer { position: sticky; bottom: 0; padding: 1.5rem; background: linear-gradient(to top, var(--c-surface) 70%, transparent); }
 
-        .app-container.visible {
-            opacity: 1;
-            transform: scale(1);
-        }
+  /* --- 5. Screen-Specific Styles --- */
+  /* Welcome Screen */
+  #welcome-screen { text-align: center; justify-content: flex-start; padding: 0; }
+  #welcome-screen .welcome-content { padding: 0 1.5rem 2.5rem 1.5rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+  .logo { font-size: 3.5rem; line-height: 1; margin-bottom: 1.5rem; }
+  #welcome-screen h1 { font-size: 2rem; font-weight: 800; }
+  #welcome-screen p { color: var(--c-text-muted); max-width: 35ch; margin: 0.75rem auto 0; }
+  .action-buttons { display: flex; flex-direction: column; gap: 1rem; margin-top: 2.5rem; }
+  .action-btn { 
+    flex-direction: column; align-items: flex-start; text-align: left; padding: 1.5rem; 
+    background: var(--c-surface); border: 1px solid var(--c-border); box-shadow: var(--shadow);
+  }
+  .action-btn:hover { border-color: #e5e7eb; }
+  .action-title { display: flex; align-items: center; gap: 0.75rem; font-size: 1.125rem; font-weight: 600; color: var(--c-text-header); }
+  .action-title .icon { font-size: 1.25rem; }
+  .action-subtitle { font-size: 0.9rem; color: var(--c-text-muted); font-weight: 400; padding-left: 40px; }
+  
+  /* Camera View & Preview Screen */
+  #camera-view { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: none; flex-direction: column; z-index: 10; }
+  #camera-stream { width: 100%; height: 100%; object-fit: cover; }
+  .camera-controls { position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem; display: flex; justify-content: center; align-items: center; }
+  #shutter-btn { width: 70px; height: 70px; border-radius: 50%; border: 5px solid white; background-color: rgba(255,255,255,0.3); }
+  #camera-cancel-btn { position: absolute; right: 2rem; color: white; background: rgba(0,0,0,0.4); padding: 0.75rem 1rem; border-radius: 99px; }
+  #preview-screen { padding: 0; }
+  #preview-screen .preview-content { padding: 0 1.5rem 1.5rem 1.5rem; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+  #preview-img { width: 100%; height: auto; aspect-ratio: 1 / 1; object-fit: cover; border-radius: var(--radius); box-shadow: var(--shadow); }
+  
+  /* Loading Screen */
+  #loading-screen { justify-content: center; text-align: center; padding-bottom: 5rem; }
+  .loading-icon { font-size: 4rem; animation: pulse 1.5s ease-in-out infinite; }
+  #loading-screen h2 { font-size: 1.5rem; margin-top: 1.5rem; color: var(--c-text-header); }
+  #loading-screen p { color: var(--c-text-muted); max-width: 30ch; margin: 0.5rem auto 0; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.7; } }
 
-        .app-header {
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .app-header h1 {
-            font-size: 1.5rem;
-            color: var(--primary-color);
-            font-weight: 700;
-        }
-
-        .app-main {
-            flex-grow: 1;
-            padding: 24px;
-            overflow-y: auto;
-        }
-
-        .view { display: none; }
-        .view.active { display: block; }
-
-        /* --- Buttons --- */
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 16px;
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
-            text-align: center;
-            text-decoration: none;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-primary {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #248a7f;
-        }
-        
-        .btn-secondary {
-            background-color: var(--primary-light);
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-        }
-        .btn-secondary:hover {
-            background-color: #e0f2f2;
-        }
-
-        .button-group {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        /* --- Camera & Preview --- */
-        #camera-view, #preview-view {
-            text-align: center;
-        }
-
-        #camera-stream, #image-preview {
-            width: 100%;
-            border-radius: 12px;
-            margin-bottom: 16px;
-            background-color: #000;
-            aspect-ratio: 4 / 3;
-            object-fit: cover;
-        }
-
-        #camera-stream {
-             transform: scaleX(-1); /* Mirror view for front camera feel */
-        }
-        
-        #canvas {
-            display: none;
-        }
-        
-        /* --- Skeleton Loader --- */
-        .skeleton-loader {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .skeleton {
-            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-            border-radius: 8px;
-        }
-        .skeleton.title { height: 40px; width: 60%; margin: 0 auto; }
-        .skeleton.pill { height: 28px; width: 30%; margin: 0 auto; }
-        .skeleton.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .skeleton.card { height: 100px; }
-        .skeleton.details { height: 150px; }
-
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-
-        /* --- Results Display --- */
-        #results-view { text-align: center; }
-
-        .result-item {
-            opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
-        }
-
-        .results-view.visible .result-item {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .results-view.visible .result-item:nth-child(2) { transition-delay: 0.1s; }
-        .results-view.visible .result-item:nth-child(3) { transition-delay: 0.2s; }
-        .results-view.visible .result-item:nth-child(4) { transition-delay: 0.3s; }
-        .results-view.visible .result-item:nth-child(5) { transition-delay: 0.4s; }
-
-
-        #total-calories-display {
-            margin-bottom: 8px;
-        }
-        #total-calories-display span {
-            font-size: 3.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        #total-calories-display small {
-            font-size: 1rem;
-            color: var(--text-secondary);
-        }
-
-        #confidence-pill {
-            display: inline-block;
-            padding: 6px 16px;
-            border-radius: 999px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-        }
-        #confidence-pill.high { background-color: #d1fae5; color: #065f46; }
-        #confidence-pill.medium { background-color: #fef3c7; color: #92400e; }
-        #confidence-pill.low { background-color: #fee2e2; color: #991b1b; }
-
-        .macros-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 24px;
-            text-align: left;
-        }
-
-        .macro-card {
-            background-color: var(--primary-light);
-            padding: 16px;
-            border-radius: 12px;
-        }
-        .macro-card h3 {
-            font-size: 1rem;
-            color: var(--text-primary);
-            margin-bottom: 4px;
-        }
-        .macro-card p {
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-        .macro-card p small {
-            font-size: 1rem;
-            font-weight: 400;
-            color: var(--text-secondary);
-        }
-
-        .details-card {
-            background-color: var(--card-background);
-            padding: 20px;
-            border-radius: 12px;
-            text-align: left;
-            border: 1px solid var(--border-color);
-            margin-bottom: 24px;
-        }
-        .details-card h3 {
-            margin-bottom: 12px;
-            font-size: 1.1rem;
-        }
-        .details-card ul {
-            list-style: none;
-            margin-bottom: 16px;
-        }
-        .details-card li {
-            padding: 8px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .details-card li:last-child {
-            border-bottom: none;
-        }
-        .details-card p {
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-    </style>
+  /* Results Screen */
+  #results-screen { padding: 0; }
+  .results-content { display: flex; flex-direction: column; gap: 1rem; padding: 0 1.5rem 1.5rem 1.5rem; }
+  .meal-summary-card { text-align: center; }
+  .meal-summary-card .title { font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--c-text-muted); }
+  .meal-summary-card .value { font-size: 1.25rem; font-weight: 600; color: var(--c-text-header); line-height: 1.4; margin-top: 0.25rem; }
+  .calorie-hero { text-align: center; padding: 2rem 1.5rem; }
+  .calorie-hero .value { font-size: 4rem; font-weight: 800; color: var(--c-text-header); line-height: 1; }
+  .calorie-hero .title { font-size: 1rem; font-weight: 500; color: var(--c-text-muted); margin-top: 0.25rem; }
+  .macros-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .macro-card { display: flex; align-items: center; gap: 1rem; padding: 1rem; }
+  .macro-icon { flex-shrink: 0; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; font-size: 1.5rem; }
+  .macro-card.protein .macro-icon { background-color: var(--c-protein-bg); }
+  .macro-card.carbs .macro-icon { background-color: var(--c-carbs-bg); }
+  .macro-card.fat .macro-icon { background-color: var(--c-fat-bg); }
+  .macro-card.fiber .macro-icon { background-color: var(--c-fiber-bg); }
+  .macro-card.sugar .macro-icon { background-color: var(--c-sugar-bg); }
+  .macro-card.sat-fat .macro-icon { background-color: var(--c-sat-fat-bg); }
+  .macro-info .value { font-size: 1.25rem; font-weight: 700; color: var(--c-text-header); line-height: 1.2; }
+  .macro-info .title { font-size: 0.875rem; color: var(--c-text-muted); }
+  .confidence-pill {
+    display: inline-flex; align-items: center; padding: 0.25rem 0.75rem; border-radius: 99px;
+    font-size: 0.8rem; font-weight: 600;
+  }
+  .confidence-pill[data-confidence="high"] { background-color: var(--c-conf-high-bg); color: var(--c-conf-high); }
+  .confidence-pill[data-confidence="medium"] { background-color: var(--c-conf-medium-bg); color: var(--c-conf-medium); }
+  .confidence-pill[data-confidence="low"] { background-color: var(--c-conf-low-bg); color: var(--c-conf-low); }
+  
+  /* --- 6. Utilities --- */
+  .toast { position: fixed; top: 1.5rem; left: 1.5rem; right: 1.5rem; background-color: #2c3e50; color: white; padding: 1rem; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; font-weight: 500; opacity: 0; transform: translateY(-20px); animation: toast-in 300ms ease-out forwards; z-index: 1000; }
+  @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
+</style>
 </head>
 <body>
-    <div id="app-container" class="app-container">
-        <header class="app-header">
-            <h1>Nutri AI</h1>
-        </header>
-        <main class="app-main">
-            <!-- Initial View -->
-            <div id="initial-view" class="view active">
-                <div class="button-group">
-                    <button id="use-camera-btn" class="btn btn-primary">Use Camera</button>
-                    <label for="upload-photo-input" class="btn btn-secondary">Upload Photo</label>
-                    <input type="file" id="upload-photo-input" accept="image/*" style="display: none;">
-                </div>
-            </div>
 
-            <!-- Camera View -->
-            <div id="camera-view" class="view">
-                <video id="camera-stream" autoplay playsinline></video>
-                <canvas id="canvas"></canvas>
-                <div class="button-group">
-                    <button id="take-photo-btn" class="btn btn-primary">Take Photo</button>
-                    <button class="btn btn-secondary back-btn">Cancel</button>
-                </div>
-            </div>
+<main class="app-shell">
 
-            <!-- Preview View -->
-            <div id="preview-view" class="view">
-                <img id="image-preview" src="" alt="Captured photo preview">
-                <div class="button-group"></div>
-            </div>
-
-            <!-- Loading View -->
-            <div id="loading-view" class="view">
-                 <div class="skeleton-loader">
-                    <div class="skeleton title"></div>
-                    <div class="skeleton pill"></div>
-                    <div class="skeleton grid">
-                        <div class="skeleton card"></div>
-                        <div class="skeleton card"></div>
-                        <div class="skeleton card"></div>
-                        <div class="skeleton card"></div>
-                    </div>
-                    <div class="skeleton details"></div>
-                </div>
-            </div>
-
-            <!-- Results View -->
-            <div id="results-view" class="view">
-                <div id="results-content"></div>
-                <div class="button-group" style="margin-top: 24px;">
-                     <button class="btn btn-primary back-btn">Scan Another Item</button>
-                </div>
-            </div>
-        </main>
+  <!-- Screen 1: Welcome -->
+  <section id="welcome-screen" class="app-screen active">
+    <header class="app-header"><div class="header-title">Nutri AI</div></header>
+    <div class="welcome-content">
+      <div class="logo">🍽️</div>
+      <h1>Welcome!</h1>
+      <p>Get instant nutritional estimates simply by taking a photo of your meal.</p>
+      <div class="action-buttons">
+        <button id="take-photo-btn" class="btn action-btn">
+          <div class="action-title"><span class="icon">📸</span> Use Camera</div>
+          <div class="action-subtitle">Snap a photo of your meal</div>
+        </button>
+        <button id="upload-photo-btn" class="btn action-btn">
+          <div class="action-title"><span class="icon">🖼️</span> Upload from Library</div>
+          <div class="action-subtitle">Choose an existing image</div>
+        </button>
+        <input id="file-input" type="file" accept="image/*" style="display:none;">
+      </div>
     </div>
+  </section>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
+  <!-- Camera View (Overlay) -->
+  <div id="camera-view">
+    <video id="camera-stream" autoplay playsinline></video>
+    <div class="camera-controls"><button id="shutter-btn"></button><button id="camera-cancel-btn">Cancel</button></div>
+  </div>
 
- 
-        const API_KEY = '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'; 
+  <!-- Screen 2: Preview -->
+  <section id="preview-screen" class="app-screen">
+    <header class="app-header">
+      <button class="back-btn" id="preview-back-btn">&lsaquo;</button>
+      <div class="header-title">Confirm Photo</div><div class="placeholder"></div>
+    </header>
+    <div class="preview-content"><img id="preview-img" alt="Meal preview"></div>
+    <footer class="sticky-footer"><button id="analyze-btn" class="btn btn-primary">Analyze Meal</button></footer>
+  </section>
+  
+  <!-- Screen 3: Loading -->
+  <section id="loading-screen" class="app-screen">
+      <div class="loading-icon">🍽️</div>
+      <h2>Analyzing...</h2>
+      <p>Our AI is working its magic. This shouldn't take long.</p>
+  </section>
 
-        // AI Prompt Configuration
-        const AI_PROMPT = `Analyze the meal in the image. Respond ONLY with a valid JSON object. Do not include markdown or text outside the JSON. The structure must be: {"items": [{"item": "string", "calories": number}], "nutrition_summary": {"total_calories": number, "macronutrients": {"protein_g": number, "carbs_g": number, "fat_g": number, "fiber_g": number}, "micronutrients": {"sugar_g": number, "sodium_mg": number}}, "general_summary": "string", "confidence_score": "string (High, Medium, or Low)", "health_tips": "string"}`;
-        const API_URL = 'https://models.inference.ai.azure.com/chat/completions';
+  <!-- Screen 4: Results -->
+  <section id="results-screen" class="app-screen">
+     <header class="app-header">
+        <div class="placeholder"></div><div class="header-title">Results</div><div class="placeholder"></div>
+    </header>
+    <div id="results-content" class="results-content"></div>
+    <footer class="sticky-footer" id="scan-another-btn-wrapper"><button class="btn btn-primary">Scan Another Meal</button></footer>
+  </section>
 
-        // ===================================================================
-        // DOM ELEMENT REFERENCES
-        // ===================================================================
-        const appContainer = document.getElementById('app-container');
-        const views = document.querySelectorAll('.view');
-        const useCameraBtn = document.getElementById('use-camera-btn');
-        const uploadPhotoInput = document.getElementById('upload-photo-input');
-        const cameraStream = document.getElementById('camera-stream');
-        const canvas = document.getElementById('canvas');
-        const takePhotoBtn = document.getElementById('take-photo-btn');
-        const imagePreview = document.getElementById('image-preview');
-        const resultsContent = document.getElementById('results-content');
-        const backBtns = document.querySelectorAll('.back-btn');
+</main>
 
-        // ===================================================================
-        // INITIALIZATION
-        // ===================================================================
-        appContainer.classList.add('visible'); // Make the app visible on load
+<script>
+document.addEventListener('DOMContentLoaded', () => {
 
-        // ===================================================================
-        // STATE MANAGEMENT
-        // ===================================================================
-        let currentStream = null;
+  const API_KEY = "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";
+  const API_MODEL = "gpt-4o-mini";
 
-        // ===================================================================
-        // VIEW MANAGEMENT
-        // ===================================================================
-        function showView(viewId) {
-            views.forEach(view => {
-                view.classList.remove('active');
-            });
-            const activeView = document.getElementById(viewId);
-            if (activeView) {
-                activeView.classList.add('active');
-            }
-        }
-        
-        function resetToInitialView() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-                currentStream = null;
-            }
-            cameraStream.srcObject = null;
-            imagePreview.src = '';
-            uploadPhotoInput.value = '';
-            resultsContent.innerHTML = '';
-            document.getElementById('results-view').classList.remove('visible');
-            showView('initial-view');
-        }
-        
-        backBtns.forEach(btn => btn.addEventListener('click', resetToInitialView));
+  const dom = {
+    screens: document.querySelectorAll('.app-screen'),
+    fileInput: document.getElementById('file-input'),
+    takePhotoBtn: document.getElementById('take-photo-btn'),
+    uploadPhotoBtn: document.getElementById('upload-photo-btn'),
+    cameraView: document.getElementById('camera-view'),
+    cameraStream: document.getElementById('camera-stream'),
+    shutterBtn: document.getElementById('shutter-btn'),
+    cameraCancelBtn: document.getElementById('camera-cancel-btn'),
+    previewBackBtn: document.getElementById('preview-back-btn'),
+    previewImg: document.getElementById('preview-img'),
+    analyzeBtn: document.getElementById('analyze-btn'),
+    resultsContent: document.getElementById('results-content'),
+    scanAnotherBtn: document.querySelector('#scan-another-btn-wrapper button'),
+  };
 
-        // ===================================================================
-        // CAMERA & UPLOAD LOGIC
-        // ===================================================================
-        async function startCamera() {
-            try {
-                const constraints = { video: { facingMode: 'environment' } };
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                cameraStream.srcObject = currentStream;
-                showView('camera-view');
-            } catch (err) {
-                console.error("Error accessing camera: ", err);
-                alert("Could not access the camera. Please ensure you have given permission and are using a secure (HTTPS) connection.");
-            }
-        }
-        
-        function takePhoto() {
-            const context = canvas.getContext('2d');
-            canvas.width = cameraStream.videoWidth;
-            canvas.height = cameraStream.videoHeight;
-            
-            context.translate(canvas.width, 0);
-            context.scale(-1, 1);
-            context.drawImage(cameraStream, 0, 0, canvas.width, canvas.height);
-            
-            const imageDataUrl = canvas.toDataURL('image/jpeg');
-            resetToInitialView(); 
-            showView('loading-view');
-            analyzeImage(imageDataUrl);
-        }
+  const state = { imageDataUrl: null, cameraStream: null };
 
-        function handleFileUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+  const showScreen = (screenId) => { dom.screens.forEach(s => s.classList.toggle('active', s.id === screenId)); };
+  const resetFlow = () => { showScreen('welcome-screen'); };
 
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                showView('loading-view');
-                analyzeImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
+  const startCamera = async () => {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        return showToast("Camera not supported on this device.");
+    }
+    try {
+        if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); }
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        state.cameraStream = stream;
+        dom.cameraStream.srcObject = stream;
+        dom.cameraView.style.display = 'flex';
+    } catch (err) {
+        showToast('Could not access camera.');
+    }
+  };
 
-        useCameraBtn.addEventListener('click', startCamera);
-        takePhotoBtn.addEventListener('click', takePhoto);
-        uploadPhotoInput.addEventListener('change', handleFileUpload);
-        
-        // ===================================================================
-        // AI API & RESULTS LOGIC
-        // ===================================================================
-        async function analyzeImage(base64Image) {
-            if (API_KEY === 'PASTE_YOUR_FINE_GRAINED_PAT_HERE') {
-                alert('Please configure your API Key in the script section of the HTML file.');
-                resetToInitialView();
-                return;
-            }
+  const stopCamera = () => {
+    if (state.cameraStream) { state.cameraStream.getTracks().forEach(track => track.stop()); }
+    dom.cameraView.style.display = 'none';
+  };
 
-            const payload = {
-                model: "gpt-4-vision-preview",
-                max_tokens: 1024,
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: AI_PROMPT },
-                            { type: "image_url", image_url: { "url": base64Image } }
-                        ]
-                    }
-                ]
-            };
-            
-            try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${API_KEY}`
-                    },
-                    body: JSON.stringify(payload)
-                });
+  const capturePhoto = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dom.cameraStream.videoWidth;
+    canvas.height = dom.cameraStream.videoHeight;
+    canvas.getContext('2d').drawImage(dom.cameraStream, 0, 0);
+    stopCamera();
+    handleImageData(canvas.toDataURL('image/jpeg', 0.9));
+  };
 
-                if (!response.ok) {
-                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-                }
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => handleImageData(e.target.result);
+    reader.readAsDataURL(file);
+    dom.fileInput.value = '';
+  };
+  
+  const handleImageData = (dataUrl) => {
+    state.imageDataUrl = dataUrl;
+    dom.previewImg.src = dataUrl;
+    showScreen('preview-screen');
+  };
+  
+  const handleAnalysis = async () => {
+    if (API_KEY.includes("PASTE_YOUR")) return showToast("API Key is not configured.");
+    if (!state.imageDataUrl) return showToast("No image to analyze.");
+    
+    showScreen('loading-screen');
 
-                const data = await response.json();
-                const content = data.choices[0].message.content;
-                const jsonData = extractJson(content);
-                
-                if (jsonData) {
-                    displayResults(jsonData);
-                } else {
-                    throw new Error("Failed to parse JSON from AI response.");
-                }
+    try {
+      const payload = {
+        model: API_MODEL, temperature: 0.2, max_tokens: 800,
+        messages: [
+          { role: "system", content: [{ type: "text", text: `You are Nutri AI. Given a meal photo, provide a concise nutritional estimate. Respond in STRICT JSON format with this exact shape: {"summary": "A descriptive, natural language summary of the meal.", "totals": {"calories": number, "protein_g": number, "carbs_g": number, "fat_g": number, "fiber_g": number, "sugar_g": number, "saturated_fat_g": number}, "confidence": "high|medium|low"}` }] },
+          { role: "user", content: [{ type: "text", text: "Estimate nutrition." }, { type: "image_url", image_url: { url: state.imageDataUrl } }] }
+        ],
+        response_format: { type: "json_object" }
+      };
+      
+      const res = await fetch("https://models.inference.ai.azure.com/chat/completions", {
+        method: "POST", headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(await res.text());
 
-            } catch (error) {
-                console.error('Analysis failed:', error);
-                alert(`Analysis failed: ${error.message}`);
-                resetToInitialView();
-            }
-        }
-        
-        function extractJson(text) {
-            const match = text.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
-            if (!match) return null;
-            
-            const jsonString = match[1] || match[2];
-            try {
-                return JSON.parse(jsonString);
-            } catch (e) {
-                console.error("JSON parsing error:", e);
-                return null;
-            }
-        }
-        
-        function displayResults(data) {
-            const { items, nutrition_summary, confidence_score, health_tips } = data;
-            const { total_calories, macronutrients, micronutrients } = nutrition_summary;
-            const confidenceClass = (confidence_score || 'medium').toLowerCase();
+      const data = await res.json();
+      const parsedJson = JSON.parse(data.choices?.[0]?.message?.content ?? "{}");
+      renderResults(parsedJson);
+      showScreen('results-screen');
 
-            const html = `
-                <div class="result-item" id="total-calories-display">
-                    <span>${Math.round(total_calories) || 'N/A'}</span> <small>kcal</small>
-                </div>
-                <div class="result-item" id="confidence-pill" class="${confidenceClass}">
-                    ${confidence_score || 'Medium'} Confidence
-                </div>
-                <div class="result-item macros-grid">
-                    <div class="macro-card">
-                        <h3>Protein</h3>
-                        <p>${macronutrients.protein_g || 0}<small>g</small></p>
-                    </div>
-                    <div class="macro-card">
-                        <h3>Carbs</h3>
-                        <p>${macronutrients.carbs_g || 0}<small>g</small></p>
-                    </div>
-                    <div class="macro-card">
-                        <h3>Fat</h3>
-                        <p>${macronutrients.fat_g || 0}<small>g</small></p>
-                    </div>
-                    <div class="macro-card">
-                        <h3>Fiber</h3>
-                        <p>${macronutrients.fiber_g || 0}<small>g</small></p>
-                    </div>
-                </div>
-                <div class="result-item details-card">
-                    <h3>Identified Items</h3>
-                    <ul>
-                       ${items && items.length > 0 ? items.map(item => `<li>${item.item} (~${Math.round(item.calories)} kcal)</li>`).join('') : '<li>No specific items identified.</li>'}
-                    </ul>
-                     <h3>Details & Tip</h3>
-                     <ul>
-                        <li>Sugar: ${micronutrients.sugar_g !== undefined ? micronutrients.sugar_g + 'g' : 'N/A'}</li>
-                        <li>Sodium: ${micronutrients.sodium_mg !== undefined ? micronutrients.sodium_mg + 'mg' : 'N/A'}</li>
-                     </ul>
-                    <p>${health_tips || 'Enjoy your meal mindfully!'}</p>
-                </div>
-            `;
-            
-            resultsContent.innerHTML = html;
-            showView('results-view');
-            setTimeout(() => {
-                document.getElementById('results-view').classList.add('visible');
-            }, 50);
-        }
+    } catch (err) {
+      showToast(`Analysis failed. Please try again.`);
+      showScreen('preview-screen');
+    }
+  };
 
-    });
-    </script>
+  const renderResults = ({ summary = "Meal", totals = {}, confidence = "medium" }) => {
+    const macro = (type, title, value, icon) => `
+      <div class="card macro-card ${type}">
+        <div class="macro-icon">${icon}</div>
+        <div class="macro-info"><div class="value" data-value="${Math.round(value ?? 0)}">0g</div><div class="title">${title}</div></div>
+      </div>`;
+    
+    dom.resultsContent.innerHTML = `
+      <div class="card meal-summary-card">
+        <div class="title">IDENTIFIED MEAL</div>
+        <div class="value">${escapeHtml(summary)}</div>
+      </div>
+      <div class="card calorie-hero">
+        <div class="value" data-value="${Math.round(totals.calories ?? 0)}">0</div>
+        <div class="title">Estimated Calories</div>
+      </div>
+      <div class="macros-grid">
+        ${macro('protein', 'Protein', totals.protein_g, '🥩')}
+        ${macro('carbs', 'Carbs', totals.carbs_g, '🍞')}
+        ${macro('fat', 'Fat', totals.fat_g, '🥑')}
+        ${macro('fiber', 'Fiber', totals.fiber_g, '🥦')}
+        ${macro('sugar', 'Sugar', totals.sugar_g, '🍬')}
+        ${macro('sat-fat', 'Sat. Fat', totals.saturated_fat_g, '🧈')}
+      </div>
+      <div class="card" style="display:flex; justify-content: space-between; align-items: center;">
+        <span style="font-weight: 500; color: var(--c-text-muted);">AI Confidence</span>
+        <div class="confidence-pill" data-confidence="${confidence.toLowerCase()}">${confidence.charAt(0).toUpperCase() + confidence.slice(1)}</div>
+      </div>`;
+    document.querySelectorAll('[data-value]').forEach(el => animateValue(el, 0, el.dataset.value, 800));
+  };
+  
+  const animateValue = (el, start, end, duration) => {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const currentValue = Math.floor(progress * (end - start) + start);
+      el.textContent = el.textContent.includes('g') ? `${currentValue}g` : currentValue;
+      if (progress < 1) window.requestAnimationFrame(step);
+    };
+    window.requestAnimationFrame(step);
+  };
+  
+  const showToast = (message) => {
+    const existing = document.querySelector('.toast'); if (existing) existing.remove();
+    const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  };
+  
+  const escapeHtml = (s) => (String(s) ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  
+  // Event Listeners
+  dom.takePhotoBtn.addEventListener('click', startCamera);
+  dom.uploadPhotoBtn.addEventListener('click', () => dom.fileInput.click());
+  dom.fileInput.addEventListener('change', handleFileSelect);
+  dom.cameraCancelBtn.addEventListener('click', stopCamera);
+  dom.shutterBtn.addEventListener('click', capturePhoto);
+  dom.previewBackBtn.addEventListener('click', resetFlow);
+  dom.analyzeBtn.addEventListener('click', handleAnalysis);
+  dom.scanAnotherBtn.addEventListener('click', resetFlow);
+});
+</script>
+
 </body>
 </html>
