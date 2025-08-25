@@ -4,38 +4,279 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nutri AI</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    <style>
+        :root {
+            --primary-color: #2a9d8f;
+            --primary-light: #f0fafa;
+            --text-primary: #264653;
+            --text-secondary: #6c757d;
+            --background-color: #fdfdfd;
+            --card-background: #ffffff;
+            --border-color: #e9ecef;
+            --error-color: #e76f51;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        /* --- Base & Layout --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 20px;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 450px;
+            height: calc(100% - 40px);
+            display: flex;
+            flex-direction: column;
+            background-color: var(--card-background);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            opacity: 0;
+            transform: scale(0.95);
+            transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
+        }
+
+        .app-container.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .app-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            font-weight: 700;
+        }
+
+        .app-main {
+            flex-grow: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* --- Buttons --- */
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #248a7f;
+        }
+        
+        .btn-secondary {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        .btn-secondary:hover {
+            background-color: #e0f2f2;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* --- Camera & Preview --- */
+        #camera-view, #preview-view {
+            text-align: center;
+        }
+
+        #camera-stream, #image-preview {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            background-color: #000;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+        }
+
+        #camera-stream {
+             transform: scaleX(-1); /* Mirror view for front camera feel */
+        }
+        
+        #canvas {
+            display: none;
+        }
+        
+        /* --- Skeleton Loader --- */
+        .skeleton-loader {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+        .skeleton.title { height: 40px; width: 60%; margin: 0 auto; }
+        .skeleton.pill { height: 28px; width: 30%; margin: 0 auto; }
+        .skeleton.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .skeleton.card { height: 100px; }
+        .skeleton.details { height: 150px; }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* --- Results Display --- */
+        #results-view { text-align: center; }
+
+        .result-item {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+        }
+
+        .results-view.visible .result-item {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .results-view.visible .result-item:nth-child(2) { transition-delay: 0.1s; }
+        .results-view.visible .result-item:nth-child(3) { transition-delay: 0.2s; }
+        .results-view.visible .result-item:nth-child(4) { transition-delay: 0.3s; }
+        .results-view.visible .result-item:nth-child(5) { transition-delay: 0.4s; }
+
+
+        #total-calories-display {
+            margin-bottom: 8px;
+        }
+        #total-calories-display span {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        #total-calories-display small {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        #confidence-pill {
+            display: inline-block;
+            padding: 6px 16px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+        #confidence-pill.high { background-color: #d1fae5; color: #065f46; }
+        #confidence-pill.medium { background-color: #fef3c7; color: #92400e; }
+        #confidence-pill.low { background-color: #fee2e2; color: #991b1b; }
+
+        .macros-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .macro-card {
+            background-color: var(--primary-light);
+            padding: 16px;
+            border-radius: 12px;
+        }
+        .macro-card h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+        .macro-card p {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        .macro-card p small {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+        }
+
+        .details-card {
+            background-color: var(--card-background);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: left;
+            border: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+        .details-card h3 {
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+        }
+        .details-card ul {
+            list-style: none;
+            margin-bottom: 16px;
+        }
+        .details-card li {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .details-card li:last-child {
+            border-bottom: none;
+        }
+        .details-card p {
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+    </style>
 </head>
 <body>
-    <div id="lock-screen">
-        <div id="pin-display">
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-            <div class="dot"></div>
-        </div>
-        <div id="keypad">
-            <button data-key="1">1</button>
-            <button data-key="2">2</button>
-            <button data-key="3">3</button>
-            <button data-key="4">4</button>
-            <button data-key="5">5</button>
-            <button data-key="6">6</button>
-            <button data-key="7">7</button>
-            <button data-key="8">8</button>
-            <button data-key="9">9</button>
-            <div class="keypad-placeholder"></div>
-            <button data-key="0">0</button>
-            <button data-key="backspace" class="keypad-backspace">&#9003;</button>
-        </div>
-    </div>
-
     <div id="app-container" class="app-container">
         <header class="app-header">
             <h1>Nutri AI</h1>
         </header>
         <main class="app-main">
+            <!-- Initial View -->
             <div id="initial-view" class="view active">
                 <div class="button-group">
                     <button id="use-camera-btn" class="btn btn-primary">Use Camera</button>
@@ -44,6 +285,7 @@
                 </div>
             </div>
 
+            <!-- Camera View -->
             <div id="camera-view" class="view">
                 <video id="camera-stream" autoplay playsinline></video>
                 <canvas id="canvas"></canvas>
@@ -53,11 +295,13 @@
                 </div>
             </div>
 
+            <!-- Preview View -->
             <div id="preview-view" class="view">
                 <img id="image-preview" src="" alt="Captured photo preview">
                 <div class="button-group"></div>
             </div>
 
+            <!-- Loading View -->
             <div id="loading-view" class="view">
                  <div class="skeleton-loader">
                     <div class="skeleton title"></div>
@@ -72,6 +316,7 @@
                 </div>
             </div>
 
+            <!-- Results View -->
             <div id="results-view" class="view">
                 <div id="results-content"></div>
                 <div class="button-group" style="margin-top: 24px;">
@@ -80,5 +325,242 @@
             </div>
         </main>
     </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ===================================================================
+        // CONFIGURATION
+        // ===================================================================
+        // IMPORTANT: Paste your GitHub Fine-Grained Personal Access Token here.
+        // This token is required to authenticate with the AI model API.
+        // WARNING: Do not commit this file with your token to a public repository.
+        // Keep your token secure.
+        //
+        const API_KEY = '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'; 
+
+        // AI Prompt Configuration
+        const AI_PROMPT = `Analyze the meal in the image. Respond ONLY with a valid JSON object. Do not include markdown or text outside the JSON. The structure must be: {"items": [{"item": "string", "calories": number}], "nutrition_summary": {"total_calories": number, "macronutrients": {"protein_g": number, "carbs_g": number, "fat_g": number, "fiber_g": number}, "micronutrients": {"sugar_g": number, "sodium_mg": number}}, "general_summary": "string", "confidence_score": "string (High, Medium, or Low)", "health_tips": "string"}`;
+        const API_URL = 'https://models.inference.ai.azure.com/chat/completions';
+
+        // ===================================================================
+        // DOM ELEMENT REFERENCES
+        // ===================================================================
+        const appContainer = document.getElementById('app-container');
+        const views = document.querySelectorAll('.view');
+        const useCameraBtn = document.getElementById('use-camera-btn');
+        const uploadPhotoInput = document.getElementById('upload-photo-input');
+        const cameraStream = document.getElementById('camera-stream');
+        const canvas = document.getElementById('canvas');
+        const takePhotoBtn = document.getElementById('take-photo-btn');
+        const imagePreview = document.getElementById('image-preview');
+        const resultsContent = document.getElementById('results-content');
+        const backBtns = document.querySelectorAll('.back-btn');
+
+        // ===================================================================
+        // INITIALIZATION
+        // ===================================================================
+        appContainer.classList.add('visible'); // Make the app visible on load
+
+        // ===================================================================
+        // STATE MANAGEMENT
+        // ===================================================================
+        let currentStream = null;
+
+        // ===================================================================
+        // VIEW MANAGEMENT
+        // ===================================================================
+        function showView(viewId) {
+            views.forEach(view => {
+                view.classList.remove('active');
+            });
+            const activeView = document.getElementById(viewId);
+            if (activeView) {
+                activeView.classList.add('active');
+            }
+        }
+        
+        function resetToInitialView() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            cameraStream.srcObject = null;
+            imagePreview.src = '';
+            uploadPhotoInput.value = '';
+            resultsContent.innerHTML = '';
+            document.getElementById('results-view').classList.remove('visible');
+            showView('initial-view');
+        }
+        
+        backBtns.forEach(btn => btn.addEventListener('click', resetToInitialView));
+
+        // ===================================================================
+        // CAMERA & UPLOAD LOGIC
+        // ===================================================================
+        async function startCamera() {
+            try {
+                const constraints = { video: { facingMode: 'environment' } };
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                cameraStream.srcObject = currentStream;
+                showView('camera-view');
+            } catch (err) {
+                console.error("Error accessing camera: ", err);
+                alert("Could not access the camera. Please ensure you have given permission and are using a secure (HTTPS) connection.");
+            }
+        }
+        
+        function takePhoto() {
+            const context = canvas.getContext('2d');
+            canvas.width = cameraStream.videoWidth;
+            canvas.height = cameraStream.videoHeight;
+            
+            context.translate(canvas.width, 0);
+            context.scale(-1, 1);
+            context.drawImage(cameraStream, 0, 0, canvas.width, canvas.height);
+            
+            const imageDataUrl = canvas.toDataURL('image/jpeg');
+            resetToInitialView(); 
+            showView('loading-view');
+            analyzeImage(imageDataUrl);
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                showView('loading-view');
+                analyzeImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        useCameraBtn.addEventListener('click', startCamera);
+        takePhotoBtn.addEventListener('click', takePhoto);
+        uploadPhotoInput.addEventListener('change', handleFileUpload);
+        
+        // ===================================================================
+        // AI API & RESULTS LOGIC
+        // ===================================================================
+        async function analyzeImage(base64Image) {
+            if (API_KEY === 'PASTE_YOUR_FINE_GRAINED_PAT_HERE') {
+                alert('Please configure your API Key in the script section of the HTML file.');
+                resetToInitialView();
+                return;
+            }
+
+            const payload = {
+                model: "gpt-4-vision-preview",
+                max_tokens: 1024,
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: AI_PROMPT },
+                            { type: "image_url", image_url: { "url": base64Image } }
+                        ]
+                    }
+                ]
+            };
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                const content = data.choices[0].message.content;
+                const jsonData = extractJson(content);
+                
+                if (jsonData) {
+                    displayResults(jsonData);
+                } else {
+                    throw new Error("Failed to parse JSON from AI response.");
+                }
+
+            } catch (error) {
+                console.error('Analysis failed:', error);
+                alert(`Analysis failed: ${error.message}`);
+                resetToInitialView();
+            }
+        }
+        
+        function extractJson(text) {
+            const match = text.match(/```json\s*([\s\S]*?)\s*```|({[\s\S]*})/);
+            if (!match) return null;
+            
+            const jsonString = match[1] || match[2];
+            try {
+                return JSON.parse(jsonString);
+            } catch (e) {
+                console.error("JSON parsing error:", e);
+                return null;
+            }
+        }
+        
+        function displayResults(data) {
+            const { items, nutrition_summary, confidence_score, health_tips } = data;
+            const { total_calories, macronutrients, micronutrients } = nutrition_summary;
+            const confidenceClass = (confidence_score || 'medium').toLowerCase();
+
+            const html = `
+                <div class="result-item" id="total-calories-display">
+                    <span>${Math.round(total_calories) || 'N/A'}</span> <small>kcal</small>
+                </div>
+                <div class="result-item" id="confidence-pill" class="${confidenceClass}">
+                    ${confidence_score || 'Medium'} Confidence
+                </div>
+                <div class="result-item macros-grid">
+                    <div class="macro-card">
+                        <h3>Protein</h3>
+                        <p>${macronutrients.protein_g || 0}<small>g</small></p>
+                    </div>
+                    <div class="macro-card">
+                        <h3>Carbs</h3>
+                        <p>${macronutrients.carbs_g || 0}<small>g</small></p>
+                    </div>
+                    <div class="macro-card">
+                        <h3>Fat</h3>
+                        <p>${macronutrients.fat_g || 0}<small>g</small></p>
+                    </div>
+                    <div class="macro-card">
+                        <h3>Fiber</h3>
+                        <p>${macronutrients.fiber_g || 0}<small>g</small></p>
+                    </div>
+                </div>
+                <div class="result-item details-card">
+                    <h3>Identified Items</h3>
+                    <ul>
+                       ${items && items.length > 0 ? items.map(item => `<li>${item.item} (~${Math.round(item.calories)} kcal)</li>`).join('') : '<li>No specific items identified.</li>'}
+                    </ul>
+                     <h3>Details & Tip</h3>
+                     <ul>
+                        <li>Sugar: ${micronutrients.sugar_g !== undefined ? micronutrients.sugar_g + 'g' : 'N/A'}</li>
+                        <li>Sodium: ${micronutrients.sodium_mg !== undefined ? micronutrients.sodium_mg + 'mg' : 'N/A'}</li>
+                     </ul>
+                    <p>${health_tips || 'Enjoy your meal mindfully!'}</p>
+                </div>
+            `;
+            
+            resultsContent.innerHTML = html;
+            showView('results-view');
+            setTimeout(() => {
+                document.getElementById('results-view').classList.add('visible');
+            }, 50);
+        }
+
+    });
+    </script>
 </body>
 </html>
